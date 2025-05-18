@@ -22,6 +22,8 @@ Here's a breakdown of how each things works:
 ### Thought:
 This is the project i create just for fun, and i just create a basic structor for y'all to start with. I also name each function base on it's used. You can understand and use easily. There's many more things you have to do like, add more command, and a checker for swear word that being use more than 3-4 time, you can mute them or something. so basically, just implement what you need Lolz.
 
+Btw, i haven't test even once, because i couldn't get the token of my bot, it's need OTP code and i'm so lazy to install the app to get it. just write and compile with my imagination. might have some issues. you can test on your own. Hahaaa
+
 ### Library Credit:
 * **Nlohmann-JSON:** (https://github.com/nlohmann/json.git)
 * **DPP, (Discord++):** (https://github.com/brainboxdotcc/DPP.git)
