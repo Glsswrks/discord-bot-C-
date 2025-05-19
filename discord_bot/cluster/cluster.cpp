@@ -8,15 +8,16 @@ namespace cluster
 		// assigned the sid and token
 		m_cluster.second = configuration;
 
-		m_cluster.first = new (std::nothrow) dpp::cluster(m_cluster.second.token, dpp::i_all_intents);
+		m_cluster.first = new dpp::cluster(m_cluster.second.token, dpp::i_all_intents);
+
 		if (m_cluster.first != NULL) {
 			using namespace utility;
 			std::ifstream ifs("vendor/swearwords.bin", std::ios::binary);
 			if (ifs.is_open()) {
 				ifs.seekg(0, std::ios::end);
-				std::unique_ptr<uint8_t[]> buffer(new uint8_t[ifs.tellg()]);
-				ifs.seekg(0, std::ios::beg);
 				uintmax_t size = ifs.tellg();
+				ifs.seekg(0, std::ios::beg);
+				std::unique_ptr<uint8_t[]> buffer = std::make_unique<uint8_t[]>(size);
 				ifs.read(reinterpret_cast<char*>(buffer.get()), size);
 				ifs.close();
 				binary_reader br = binary_reader(buffer.get(), size);
@@ -24,7 +25,7 @@ namespace cluster
 				uint32_t amount = br.get_uint();
 				for (uint32_t i = 0; i < amount; i++) {
 					std::string str = br.get_string();
-					m_cluster.second.swear_words.insert(str);
+					m_cluster.second.insert(str);
 				}
 				br.cleanup();
 			} else {
@@ -43,19 +44,19 @@ namespace cluster
 	{
 		dpp::cluster* bot = m_cluster.first;
 		if (bot == NULL) {
-			std::cerr << "bot cannot be create." << std::endl;
+			std::cout << "bot cannot be create." << std::endl;
 			return nullptr;
 		}
 
-		bot->on_interaction_create([&](const dpp::interaction_create_t& ctx) {
-			this->interaction_create_t(ctx);
+		bot->on_message_create([&](const dpp::message_create_t& ctx) {
+			this->message_create_t(ctx);
 			});
 
 		bot->on_ready([&](const dpp::ready_t& ctx) {
 			this->ready_t(ctx);
 			});
 
-		bot->start(dpp::st_wait);
+		bot->start();
 
 		return this;
 	}
@@ -69,32 +70,29 @@ namespace cluster
 			bot->set_presence(dpp::presence(
 				dpp::presence_status::ps_idle,
 				dpp::activity_type::at_custom,
-				"Coding"
+				"Playing Visual Studio 2022"
 			));
 
 	}
-	void discord_bot::interaction_create_t(const dpp::interaction_create_t& ctx)
+	void discord_bot::message_create_t(const dpp::message_create_t& ctx)
 	{
-		dpp::cluster* bot = m_cluster.first;
-		const std::string& content = ctx.command.msg.content;
-		auto& context = ctx.command;
-		
-		// if message from the bot, did nothing
-		if (context.msg.author.id == bot->me.id) {
+		if (ctx.msg.author.id == m_cluster.first->me.id)
 			return;
-		}
+		dpp::cluster* bot = m_cluster.first;
+		const std::string& content = ctx.msg.content;
+		auto& context = ctx.msg;
 
 		// get some basic from the content sender
-		dpp::user user = context.usr;
+		dpp::user user = context.author;
 		dpp::guild_member member = context.member;
 		dpp::snowflake channelID = context.channel_id;
 
-		if (content.length() != 0x0) {
+		if (content.size() != 0x0) {
 			if (is_swearwords(content)) {
 				// delete message if swear words are found using
 				bot->message_delete(
-					context.msg.id,
-					context.msg.channel_id
+					context.id,
+					context.channel_id
 				);
 				return;
 			} if (is_command(content)) {
@@ -131,7 +129,7 @@ namespace cluster
 		std::istringstream iss(content);
 		std::string word;
 		while (iss >> word) {
-			if (m_cluster.second.swear_words.find(word) != m_cluster.second.swear_words.end()) {
+			if (m_cluster.second.swearwords().find(word) != m_cluster.second.swearwords().end()) {
 				return true;
 			}
 		}
